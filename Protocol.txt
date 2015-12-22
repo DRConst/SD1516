@@ -1,0 +1,12 @@
+All packets shall be prefixed with a common header as follows:
+username:[user];password:[pw];command:[command]
+these options must be present at all times
+in the event that the user has already logged in [pw] may be null, and the server will check if the user already is authed.
+
+Possible commands:
+- command:login
+	Arguments: No other arguments needed, the server will auth the username and password.
+	Return: 1 if successful, error description otherwise.
+- command:register
+	Arguments: No other arguments needed, the server will register the username and password.
+	Return: 1 if successful, error description otherwise.
