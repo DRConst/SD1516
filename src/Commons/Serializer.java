@@ -62,11 +62,11 @@ public class Serializer {
     public static String serializeToString(Object o)
     {
         ByteArrayOutputStream bao = new ByteArrayOutputStream();
-
         try {
             ObjectOutputStream oos = new ObjectOutputStream(bao);
             oos.writeObject(o);
-            return new BASE64Encoder().encode(bao.toByteArray()).toString();
+            //return new BASE64Encoder().encode(bao.toByteArray()).toString();
+            return Base64.getEncoder().encodeToString(bao.toByteArray());
         } catch (IOException e) {
             e.printStackTrace();
         }

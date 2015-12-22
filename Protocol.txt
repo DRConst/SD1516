@@ -6,7 +6,7 @@ in the event that the user has already logged in [pw] may be null, and the serve
 Possible commands:
 - command:login
 	Arguments: No other arguments needed, the server will auth the username and password.
-	Return: Serialized user class if successful, error description otherwise.
+	Return: "success: " followed by serialized user class if successful, "failure: " followed by error description otherwise.
 - command:register
 	Arguments: No other arguments needed, the server will register the username and password.
-	Return: 1 if successful, error description otherwise.
+	Return: "success:" if successful, "failure: " error description otherwise.
