@@ -1,11 +1,14 @@
 package Server;
 
 import Commons.ClientServerCodes;
+import Commons.Serializer;
+import Commons.User;
 
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 
 import static java.lang.Thread.sleep;
@@ -22,9 +25,13 @@ public class Svr_ClientHandler {
     private BufferedReader input, hbIn;
     private PrintWriter output, hbOut;
 
-    public Svr_ClientHandler(Socket s)
+    private Login loginDB;
+    public Svr_ClientHandler(Socket s, Login loginDB)
     {
+        this.loginDB = loginDB;
+
         this.socket = s;
+
         try {
             socket.setSoTimeout(0);
         } catch (SocketException e) {
@@ -69,25 +76,87 @@ public class Svr_ClientHandler {
     {
         while(!timeout)
         {
-            output.println("Awaiting command.");
-            output.flush();
+            System.out.println("Awaiting command.");
 
             try {
                 String packet = input.readLine();
-                output.println("Got packet : " + packet);
-                output.flush();
+                System.out.println("Got packet : " + packet);
+
+                parsePacket(packet);
+
+                if(lastCommand.get("command").equals("login"))
+                    loginHandler();
+                else if(lastCommand.get("command").equals("register"))
+                    registerHandler();
             } catch (IOException e) {
                 cleanup();
                 e.printStackTrace();
             }
         }
     }
+    private void registerHandler()
+    {
+        String username = lastCommand.get("username");
+        String password = lastCommand.get("password");
 
+        if (password == null || username == null) { //packet malformed
+            output.println("Malformed packet");
+            output.flush();
+        }
+        else
+        {
+
+            try {
+                loginDB.registerUser(username, password, "");
+                loginHandler();//Login the user as well;
+            }  catch (IOException e) {
+                output.println("failure:IOException");
+                output.flush();
+            } catch (NoSuchAlgorithmException e) {
+                output.println("failure:Failed encrypting data");
+                output.flush();
+            } catch (UserRegisteredException e ) {
+                output.println("failure:Register failed");//Precise error obscured to prevent user enumeration
+                output.flush();
+            }
+        }
+    }
+    private void loginHandler()
+    {
+        String username = lastCommand.get("username");
+        String password = lastCommand.get("password");
+
+        if (password == null || username == null) { //packet malformed
+            output.println("Malformed packet");
+            output.flush();
+        }
+        else
+        {
+            System.out.println("Got request to login : " + username);
+            User user = null;
+
+            try {
+                user = loginDB.authenticateUser(username, password);
+                output.println("success:" + Serializer.serializeToString(user));
+                output.flush();
+            } catch (IOException e) {
+                output.println("failure:IOException");
+                output.flush();
+            } catch (NoSuchAlgorithmException e) {
+                output.println("failure:Failed decrypting data");
+                output.flush();
+            } catch (UserNotFoundException | LoginFailedException e) {
+                output.println("failure:Login failed");//Precise error obscured to prevent// user enumeration
+                output.flush();
+            }
+
+        }
+    }
 
     private void parsePacket(String packet)
     {
-        String[] split = packet.split("\\s;");
-
+        String[] split = packet.split("[;:]");
+        lastCommand = new HashMap<>();
         for(int i = 0; i < split.length;)
         {
             lastCommand.put(split[i++], split[i++]);

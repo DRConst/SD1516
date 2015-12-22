@@ -1,6 +1,8 @@
 package Client;
 
 import Commons.ClientServerCodes;
+import Commons.Serializer;
+import Commons.User;
 
 import java.io.*;
 import java.net.Socket;
@@ -15,7 +17,8 @@ public class Cli_ConnectionHandler {
     String host = "localhost";
     private BufferedReader input, hbIn;
     private PrintWriter output, hbOut;
-
+    private BufferedReader bufferedReader = null;
+    User user = null;
     public Cli_ConnectionHandler()
     {
         try {
@@ -47,12 +50,99 @@ public class Cli_ConnectionHandler {
 
     public void mainLoop()
     {
+        String option = "";
+        bufferedReader = new BufferedReader(new InputStreamReader(System.in));
         while(!timeout)
         {
+            System.out.println("Please choose an option :");
+
+            System.out.println("a - Login");
+            System.out.println("b - Register");
+
+
+            try {
+               option = bufferedReader.readLine();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            if(option.equals("a"))
+            {
+                loginOption();
+            }else if(option.equals("b"))
+            {
+                registerOption();
+            }
 
         }
     }
+    private void registerOption()
+    {
+        String name, password;
 
+
+        try {
+            System.out.println("Please choose a username :");
+            name = bufferedReader.readLine();
+            System.out.println("Please choose a password :");
+            password = bufferedReader.readLine();
+            user = new User(name, password);
+            String packet = user.getPacketHeader("register");
+            output.println(packet);
+            output.flush();
+
+            String response = input.readLine();
+            String[] chunks = response.split(":");
+            if(chunks[0].equals("success"))
+            {
+                System.out.println("Register successful, you are now logged in");
+                user = (User) Serializer.unserializeFromString(chunks[1]);
+            }else
+            {
+                System.out.println("Failed to register, the reason :  " + chunks[1]);
+                user = null;
+            }
+        } catch (IOException e) {
+            System.out.println("Failed to register");
+            e.printStackTrace();
+        }
+
+
+    }
+
+
+    private void loginOption()
+    {
+        String name, password;
+
+
+        try {
+            System.out.println("Please choose a username :");
+            name = bufferedReader.readLine();
+            System.out.println("Please choose a password :");
+            password = bufferedReader.readLine();
+            user = new User(name, password);
+            String packet = user.getPacketHeader("login");
+            output.println(packet);
+            output.flush();
+
+            String response = input.readLine();
+            String[] chunks = response.split(":");
+            if(chunks[0].equals("success"))
+            {
+                user = (User) Serializer.unserializeFromString(chunks[1]);
+                System.out.println("Logged in " + user.toString());
+            }else
+            {
+                System.out.println("Failed to log in, the reason :  " + chunks[1]);
+                user = null;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+    }
     private void heartbeat() throws ServerUnreachableException {
         String response;
         while(!timeout)

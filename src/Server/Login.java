@@ -1,6 +1,8 @@
 package Server; /**
  * Created by drcon on 21/12/2015.
  */
+import Commons.User;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
