@@ -122,7 +122,9 @@ public class Svr_ClientHandler {
                 Socket clientPushSocket = driverPool.getClientSocket(username);
                 if(clientPushSocket != null)
                 {
-                    new PrintWriter(new OutputStreamWriter(clientPushSocket.getOutputStream())).println("price:" + lastCommand.get("price")); //Write price to client
+                    PrintWriter clientPrinter = new PrintWriter(new OutputStreamWriter(clientPushSocket.getOutputStream()));
+                    clientPrinter.println("price:" + lastCommand.get("price")); //Write price to client
+                    clientPrinter.flush();
                     output.println("success: Please register again if you wish to apply for another job.");
                     output.flush();
                 }else
@@ -161,6 +163,7 @@ public class Svr_ClientHandler {
                 if (clientSocket != null) {
                     PrintWriter cliWriter = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
                     cliWriter.println("arrival");
+                    cliWriter.flush();
                     output.println("success: ");
                     output.flush();
                 } else {
@@ -287,6 +290,7 @@ public class Svr_ClientHandler {
 
 
                 driverWriter.println(sb.toString());
+                driverWriter.flush();
 
                 driverWriter.close();
             } catch (NoAvailableDriversException e) {
