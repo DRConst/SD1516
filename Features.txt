@@ -1,0 +1,4 @@
+Features to implement if we have time:
+-Reconnect
+-Client waits for drivers rather than failure
+-Allow drivers to update position

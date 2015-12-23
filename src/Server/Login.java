@@ -30,7 +30,7 @@ public class Login implements Serializable
         salts = l.getSalts();
     }
 
-    public synchronized  void  registerUser(String userName, String password, String name) throws IOException, NoSuchAlgorithmException, UserRegisteredException {
+    public synchronized  void  registerUser(String userName, String password, String plate, String make) throws IOException, NoSuchAlgorithmException, UserRegisteredException {
         byte[] salt = genSalt();
         byte[] hash = genHash(salt, password);
         if(users.containsKey(userName))
@@ -40,7 +40,8 @@ public class Login implements Serializable
         {
             registerSalt(userName, salt);
             registerPw(userName, hash);
-            users.put(userName, new User(userName, password));
+            users.put(userName, new User(userName, password, plate, make));
+
         }
     }
 

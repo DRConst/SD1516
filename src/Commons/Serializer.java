@@ -84,6 +84,8 @@ public class Serializer {
             baos.write(s.getBytes("UTF-8"));
             ObjectInputStream oos = new ObjectInputStream(new ByteArrayInputStream(new BASE64Decoder().decodeBuffer(s)));
             o = oos.readObject();
+            String classname = o.getClass().toString();
+            classname.charAt(1);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {

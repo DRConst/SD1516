@@ -1,12 +1,41 @@
-All packets shall be prefixed with a common header as follows:
-username:[user];password:[pw];command:[command]
+All serverbound packets shall be prefixed with a common header as follows:
+username:[user];password:[pw];command:[command];argument1:[argument1]
 these options must be present at all times
 in the event that the user has already logged in [pw] may be null, and the server will check if the user already is authed.
+
+All reply packets shall be prefixed by either success:[]; or failure:[]; to represent status, followed by any other information as needed.
 
 Possible commands:
 - command:login
 	Arguments: No other arguments needed, the server will auth the username and password.
 	Return: "success: " followed by serialized user class if successful, "failure: " followed by error description otherwise.
 - command:register
-	Arguments: No other arguments needed, the server will register the username and password.
-	Return: "success:" if successful, "failure: " error description otherwise.
+	Arguments: late, make. Can be left blank if the client is not a driver
+	Return: "success: " followed by serialized user class if successful, "failure: " followed by error description otherwise.
+- command:request
+	Arguments: startx, starty, endx, endy
+	Return: "success:;plate:[plate];make:[make];eta:[eta];port:[port]" if there are drivers availabe, "failure: " otherwise. The port will be the were the client can get PUSH messages.
+- command:driver
+	Arguments : x, y
+	Return: "success: ;port:[port]" if there are no drivers with the same ID, "failure: " otherwise. The port will be the were the driver can get PUSH messages.
+- command:arrival
+	Arguments: No arguments, just a status report.
+	Return: "success: " if there was a client waiting, "failure: " otherwise. 
+- command:destination
+	Arguments:price
+	Return:
+	
+	
+Push Commands:
+- prefix:arrival //Informs the user of the drivers arrival
+	Arguments: No arguments, just a status report
+	Return:	Server expects no data
+	
+- prefix:price   //Informs the user of the price to pay
+	Arguments: price:[price]
+	Return:	Server expects no data
+	
+- prefix:client //Informs the driver a client has been found
+	Arguments: startx, starty, endx, endy
+	Return:	Server expects no data
+	

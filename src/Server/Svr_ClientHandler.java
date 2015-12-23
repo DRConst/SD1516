@@ -17,8 +17,8 @@ import static java.lang.Thread.sleep;
  * Created by drcon on 21/12/2015.
  */
 public class Svr_ClientHandler {
-    Socket socket, hbCliSocket;
-    ServerSocket hbSvrSocket;
+    Socket socket, hbCliSocket, pushCliSocket;
+    ServerSocket hbSvrSocket, pushSvrSocket;
     boolean timeout = false;
     HashMap<String,String> lastCommand;
 
@@ -26,9 +26,13 @@ public class Svr_ClientHandler {
     private PrintWriter output, hbOut;
 
     private Login loginDB;
-    public Svr_ClientHandler(Socket s, Login loginDB)
+
+    private DriverPool driverPool;
+    public Svr_ClientHandler(Socket s, Login loginDB, DriverPool driverPool)
     {
         this.loginDB = loginDB;
+
+        this.driverPool = driverPool;
 
         this.socket = s;
 
@@ -88,13 +92,126 @@ public class Svr_ClientHandler {
                     loginHandler();
                 else if(lastCommand.get("command").equals("register"))
                     registerHandler();
+                else if(lastCommand.get("command").equals("request"))
+                    requestHandler();
+                else if(lastCommand.get("command").equals("driver"))
+                    driverHandler();
+                else if(lastCommand.get("command").equals("arrival"))
+                    arrivalHandler();
+                else if(lastCommand.get("command").equals("destination"))
+                    destinationHandler();
             } catch (IOException e) {
                 cleanup();
                 e.printStackTrace();
             }
         }
     }
-    private void registerHandler()
+
+    private void destinationHandler()
+    {
+        String username = lastCommand.get("username");
+        String password = lastCommand.get("password");
+        User driver;
+        if (password == null || username == null) { //packet malformed
+            output.println("Malformed packet");
+            output.flush();
+        }else {
+            try {
+                driver = loginDB.authenticateUser(username, password);
+
+                Socket clientPushSocket = driverPool.getClientSocket(username);
+
+                new PrintWriter(new OutputStreamWriter(clientPushSocket.getOutputStream())).println("price:" + lastCommand.get("price")); //Write price to client
+
+
+
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (UserNotFoundException | LoginFailedException e) {
+                output.println("failure: ");
+            }
+        }
+    }
+
+    private void arrivalHandler() {
+        String username = lastCommand.get("username");
+        String password = lastCommand.get("password");
+        User driver;
+        if (password == null || username == null) { //packet malformed
+            output.println("Malformed packet");
+            output.flush();
+        } else {
+            try {
+                driver = loginDB.authenticateUser(username, password);
+
+                Socket clientSocket = driverPool.getClientSocket(username);
+                if (clientSocket != null) {
+                    PrintWriter cliWriter = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
+                    cliWriter.println("arrival");
+                    output.println("success: ");
+                } else {
+                    output.println("failure: ");
+                }
+
+
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (UserNotFoundException | LoginFailedException e) {
+                output.println("failure: ");
+            }
+        }
+    }
+
+    private void driverHandler()
+    {
+        String username = lastCommand.get("username");
+        String password = lastCommand.get("password");
+        User driver;
+        if (password == null || username == null) { //packet malformed
+            output.println("Malformed packet");
+            output.flush();
+        }
+        else
+        {
+            try {
+                driver = loginDB.authenticateUser(username, password);
+                int x = Integer.parseInt(lastCommand.get("x"));
+                int y = Integer.parseInt(lastCommand.get("y"));
+
+
+
+
+
+                ServerSocket driverPushSvr = new ServerSocket(0);
+                driverPushSvr.setSoTimeout(0);
+                int svrPort = driverPushSvr.getLocalPort();
+
+                output.println("success: ;port:" + svrPort + ";");
+
+                Socket driverSocket = driverPushSvr.accept();
+
+                driverPool.registerDriver(driver.getUserName(), x, y, driverSocket);
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
+            } catch (UserNotFoundException e) {
+                e.printStackTrace();
+            } catch (LoginFailedException e) {
+                e.printStackTrace();
+            } catch (DriverAlreadyRegisteredException e) {
+                e.printStackTrace();
+            }
+
+        }
+    }
+
+    private void requestHandler()
     {
         String username = lastCommand.get("username");
         String password = lastCommand.get("password");
@@ -105,9 +222,88 @@ public class Svr_ClientHandler {
         }
         else
         {
+            int startx = Integer.parseInt(lastCommand.get("startx"));
+            int starty = Integer.parseInt(lastCommand.get("starty"));
+            int endx = Integer.parseInt(lastCommand.get("endx"));
+            int endy = Integer.parseInt(lastCommand.get("endy"));
 
             try {
-                loginDB.registerUser(username, password, "");
+                String driverID = driverPool.getClosestDriver(startx, starty);
+                User driver = loginDB.getRegisteredUser(driverID);
+                StringBuilder sb = new StringBuilder("success: ;plate:");
+                sb.append(driver.getPlate());
+                sb.append(";make:");
+                sb.append(driver.getModel());
+                sb.append(";eta:");
+                int eta = driverPool.getDistanceToDriver(driverID, startx, starty)/2 ; //Cabs go at 2 m/s
+                sb.append(eta);
+
+
+                pushSvrSocket = new ServerSocket(0);
+                int pushPort = pushSvrSocket.getLocalPort();
+                pushSvrSocket.setSoTimeout(5000);
+
+                sb.append(";port:");
+                sb.append(pushPort + ";");
+                output.println(sb.toString());
+
+                pushCliSocket = pushSvrSocket.accept();
+                pushCliSocket.setSoTimeout(5000);
+
+                driverPool.assignDriver(driverID, pushCliSocket);
+
+
+                //Now communicate with the driver to inform of the client to pickup;
+                Socket driverSocket = driverPool.getAssignedDriverSocket(driverID);
+
+                PrintWriter driverWriter = new PrintWriter(new OutputStreamWriter(driverSocket.getOutputStream()));
+
+                sb.setLength(0); //Reset the SB
+
+                sb.append("client: ;startx:");
+                sb.append(startx);
+                sb.append(";starty:");
+                sb.append(starty);
+                sb.append(";endx:");
+                sb.append(endx);
+                sb.append(";endy:");
+                sb.append(endy);
+
+
+                driverWriter.println(sb.toString());
+
+                driverWriter.close();
+            } catch (NoAvailableDriversException e) {
+                output.println("failure:No drivers available at this time, please try again later;");
+                output.flush();
+            } catch (SocketException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            output.println("success: ;plate:[plate];make:[make];eta:[eta];port:[port]");
+            output.flush();
+
+        }
+    }
+
+    private void registerHandler()
+    {
+        String username = lastCommand.get("username");
+        String password = lastCommand.get("password");
+        String make = lastCommand.get("make");
+        String plate = lastCommand.get("plate");
+        if (password == null || username == null) { //packet malformed
+            output.println("Malformed packet");
+            output.flush();
+        }
+        else
+        {
+
+            try {
+
+                loginDB.registerUser(username, password, plate, make);
                 loginHandler();//Login the user as well;
             }  catch (IOException e) {
                 output.println("failure:IOException");
@@ -116,7 +312,7 @@ public class Svr_ClientHandler {
                 output.println("failure:Failed encrypting data");
                 output.flush();
             } catch (UserRegisteredException e ) {
-                output.println("failure:Register failed");//Precise error obscured to prevent user enumeration
+                output.println("failure:Registration failed");//Precise error obscured to prevent user enumeration
                 output.flush();
             }
         }
@@ -175,6 +371,8 @@ public class Svr_ClientHandler {
 
         hbOut = new PrintWriter(new OutputStreamWriter(hbCliSocket.getOutputStream()));
         hbIn = new BufferedReader(new InputStreamReader(hbCliSocket.getInputStream()));
+
+        hbSvrSocket.close();
     }
     public void heartbeat() throws ClientTimedOutException {
 
