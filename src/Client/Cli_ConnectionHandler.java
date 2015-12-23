@@ -117,9 +117,22 @@ public class Cli_ConnectionHandler {
         String packetHeader = user.getPacketHeader("destination");
         int price = 0;
         try {
+            System.out.println("Please input the price you wish to charge:");
             price = Integer.parseInt(new BufferedReader(new InputStreamReader(System.in)).readLine());
             String packet = packetHeader + "price:" + price + ";";
             output.println(packet);
+            output.flush();
+
+            String response = input.readLine();
+            String[] responseChunks = response.split("[:;]");
+            if(responseChunks[0].equals("success"))
+            {
+                System.out.println("The client has been informed of the price. " + responseChunks[1]);
+            }else{
+                System.out.println("You have no assigned client, please wait until one is assigned to you");
+            }
+
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -129,6 +142,7 @@ public class Cli_ConnectionHandler {
     {
         String packetHeader = user.getPacketHeader("arrival");
         output.println(packetHeader);
+        output.flush();
 
         try {
             String response = input.readLine();
@@ -165,37 +179,43 @@ public class Cli_ConnectionHandler {
             sb.append(";");
 
             output.println(sb.toString());
+            output.flush();
 
-            int port = Integer.parseInt(input.readLine());
+            String response = input.readLine();
+            String[] chunks = response.split("[:;]");
 
-            driverPushSocket = new Socket(host,port);
-
-            Thread pushThread = new Thread(() ->
+            if(chunks[0].equals("success"))
             {
+                driverPushSocket = new Socket(host,Integer.parseInt(chunks[3]));
 
-                try {
-                    driverPushSocket.setSoTimeout(0);//Disable timeout, it might take a while to get a client
-                    BufferedReader pushReader = new BufferedReader(new InputStreamReader(driverPushSocket.getInputStream()));
+                Thread pushThread = new Thread(() ->
+                {
 
-                    String pushResponse = pushReader.readLine();
-                    String[] pushChunks = pushResponse.split("[:;]");
+                    try {
+                        driverPushSocket.setSoTimeout(0);//Disable timeout, it might take a while to get a client
+                        BufferedReader pushReader = new BufferedReader(new InputStreamReader(driverPushSocket.getInputStream()));
 
-                    if(pushChunks[0].equals("client"))
-                    {
-                        System.out.println("A client has been found.");
-                        System.out.println("Please head to (" + pushChunks[2] + ", " + pushChunks[4]
-                                + "), and deliver the client to (" + pushChunks[6] + ", " + pushChunks[8] + ").");
+                        String pushResponse = pushReader.readLine();
+                        String[] pushChunks = pushResponse.split("[:;]");
+
+                        if(pushChunks[0].equals("client"))
+                        {
+                            System.out.println("A client has been found.");
+                            System.out.println("Please head to (" + pushChunks[3] + ", " + pushChunks[5]
+                                    + "), and deliver the client to (" + pushChunks[7] + ", " + pushChunks[9] + ").");
+                        }
+
+                        driverPushSocket.close();
+                    } catch (SocketException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
+                });
 
-                    driverPushSocket.close();
-                } catch (SocketException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            });
+                pushThread.start();
+            }
 
-            pushThread.start();
         }catch (IOException e)
         {
 
@@ -307,7 +327,7 @@ public class Cli_ConnectionHandler {
             {
                 sb.append("plate:");
                 sb.append(plate);
-                sb.append("make:");
+                sb.append(";make:");
                 sb.append(make);
                 sb.append(";");
             }
@@ -377,7 +397,7 @@ public class Cli_ConnectionHandler {
                 response = hbIn.readLine();
                 if(!response.equals(ClientServerCodes.svr2cli_heartbeat))
                 {
-                    //Something went wrong, just drop the connection;
+                    System.out.println("Server HB Corrupted : " + response);
                     throw new ServerUnreachableException();
                 }else{
                     hbOut.println(ClientServerCodes.cli2svr_heartbeat);
@@ -400,7 +420,7 @@ public class Cli_ConnectionHandler {
             hbSocket = new Socket(host, port);
             hbOut = new PrintWriter(new OutputStreamWriter(hbSocket.getOutputStream()));
             hbIn = new BufferedReader(new InputStreamReader(hbSocket.getInputStream()));
-            hbSocket.setSoTimeout(5000);
+            hbSocket.setSoTimeout(10000);
 
         } catch (IOException e) {
             e.printStackTrace();

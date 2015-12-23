@@ -52,12 +52,9 @@ public class DriverPool implements Serializable{
         int mapSize = waitingDrivers.size();
         Position clientPos = new Position(x, y);
         String currentMaxID = null;
-        int currentMaxDist = 0;
+        int currentMaxDist = -10;
         if(mapSize > 0)
         {
-
-
-
             Position driverPos;
             String driverID;
             Set<Map.Entry<String, Position>> entries = waitingDrivers.entrySet();
@@ -115,7 +112,7 @@ public class DriverPool implements Serializable{
         assignedDriversSocket.remove(driver);
         assignedLock.unlock();
     }
-    private class Position
+    private class Position implements Serializable
     {
         int x, y;
 

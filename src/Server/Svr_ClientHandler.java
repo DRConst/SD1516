@@ -120,8 +120,18 @@ public class Svr_ClientHandler {
                 driver = loginDB.authenticateUser(username, password);
 
                 Socket clientPushSocket = driverPool.getClientSocket(username);
+                if(clientPushSocket != null)
+                {
+                    new PrintWriter(new OutputStreamWriter(clientPushSocket.getOutputStream())).println("price:" + lastCommand.get("price")); //Write price to client
+                    output.println("success: Please register again if you wish to apply for another job.");
+                    output.flush();
+                }else
+                {
+                    output.println("failure:");
+                    output.flush();
+                }
 
-                new PrintWriter(new OutputStreamWriter(clientPushSocket.getOutputStream())).println("price:" + lastCommand.get("price")); //Write price to client
+
 
 
 
@@ -131,6 +141,7 @@ public class Svr_ClientHandler {
                 e.printStackTrace();
             } catch (UserNotFoundException | LoginFailedException e) {
                 output.println("failure: ");
+                output.flush();
             }
         }
     }
@@ -151,8 +162,10 @@ public class Svr_ClientHandler {
                     PrintWriter cliWriter = new PrintWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
                     cliWriter.println("arrival");
                     output.println("success: ");
+                    output.flush();
                 } else {
-                    output.println("failure: ");
+                    output.println("failure: No client has been assigned, please wait.");
+                    output.flush();
                 }
 
 
@@ -162,6 +175,7 @@ public class Svr_ClientHandler {
                 e.printStackTrace();
             } catch (UserNotFoundException | LoginFailedException e) {
                 output.println("failure: ");
+                output.flush();
             }
         }
     }
@@ -191,6 +205,7 @@ public class Svr_ClientHandler {
                 int svrPort = driverPushSvr.getLocalPort();
 
                 output.println("success: ;port:" + svrPort + ";");
+                output.flush();
 
                 Socket driverSocket = driverPushSvr.accept();
 
@@ -246,6 +261,7 @@ public class Svr_ClientHandler {
                 sb.append(";port:");
                 sb.append(pushPort + ";");
                 output.println(sb.toString());
+                output.flush();
 
                 pushCliSocket = pushSvrSocket.accept();
                 pushCliSocket.setSoTimeout(5000);
@@ -359,12 +375,12 @@ public class Svr_ClientHandler {
     private void initHeartbeat() throws IOException {
         hbSvrSocket = new ServerSocket(0);
         int hbPort = hbSvrSocket.getLocalPort();
-        hbSvrSocket.setSoTimeout(5000);
+        hbSvrSocket.setSoTimeout(10000);
         //output.print(ClientServerCodes.svr2cli_heartbeatPort);
         output.println(hbPort);
         output.flush();
         hbCliSocket = hbSvrSocket.accept();
-        hbCliSocket.setSoTimeout(5000);
+        hbCliSocket.setSoTimeout(10000);
 
         hbOut = new PrintWriter(new OutputStreamWriter(hbCliSocket.getOutputStream()));
         hbIn = new BufferedReader(new InputStreamReader(hbCliSocket.getInputStream()));

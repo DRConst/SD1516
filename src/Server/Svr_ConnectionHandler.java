@@ -68,11 +68,11 @@ public class Svr_ConnectionHandler {
         }
 
         DriverPool driverPool = null;
-        try {
+        /*try {
             driverPool = (DriverPool) serializer.readObject("Server.DriverPool");
         } catch (ClassNotFoundException e) {
 
-        }
+        }*/
         if (driverPool == null) {
             driverPool = new DriverPool();
         }
@@ -84,7 +84,7 @@ public class Svr_ConnectionHandler {
         while (true)
         {
             sleep(10000);
-            serializer.writeObject(driverPool);
+            //serializer.writeObject(driverPool);
             serializer.writeObject(login);
             System.out.println("State saved");
         }
