@@ -91,7 +91,7 @@ public class Svr_ClientHandler {
                 if(lastCommand.get("command").equals("login"))
                     loginHandler();
                 else if(lastCommand.get("command").equals("register"))
-                    registerHandler();
+                    registrationHandler();
                 else if(lastCommand.get("command").equals("request"))
                     requestHandler();
                 else if(lastCommand.get("command").equals("driver"))
@@ -282,13 +282,10 @@ public class Svr_ClientHandler {
                 e.printStackTrace();
             }
 
-            output.println("success: ;plate:[plate];make:[make];eta:[eta];port:[port]");
-            output.flush();
-
         }
     }
 
-    private void registerHandler()
+    private void registrationHandler()
     {
         String username = lastCommand.get("username");
         String password = lastCommand.get("password");
@@ -353,7 +350,7 @@ public class Svr_ClientHandler {
     {
         String[] split = packet.split("[;:]");
         lastCommand = new HashMap<>();
-        for(int i = 0; i < split.length;)
+        for(int i = 0; i < split.length - 1;)
         {
             lastCommand.put(split[i++], split[i++]);
         }

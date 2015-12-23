@@ -277,7 +277,6 @@ public class Cli_ConnectionHandler {
             }else
             {
                 System.out.println("Failed to register, the reason :  " + chunks[1]);
-                user = null;
             }
         } catch (IOException e) {
             System.out.println("Failed to register");
@@ -301,8 +300,19 @@ public class Cli_ConnectionHandler {
             make = bufferedReader.readLine();
 
             user = new User(name, password);
-            String packet = user.getPacketHeader("register");
-            output.println(packet);
+
+            String packetHeader = user.getPacketHeader("register");
+            StringBuilder sb = new StringBuilder(packetHeader);
+            if(!make.equals("") && !plate.equals(""))
+            {
+                sb.append("plate:");
+                sb.append(plate);
+                sb.append("make:");
+                sb.append(make);
+                sb.append(";");
+            }
+
+            output.println(sb.toString());
             output.flush();
 
             String response = input.readLine();
