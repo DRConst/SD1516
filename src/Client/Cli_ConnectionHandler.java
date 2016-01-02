@@ -395,12 +395,12 @@ public class Cli_ConnectionHandler {
             try
             {
                 response = hbIn.readLine();
-                if(!response.equals(ClientServerCodes.svr2cli_heartbeat))
+                if(!response.equals("heart"))
                 {
                     System.out.println("Server HB Corrupted : " + response);
                     throw new ServerUnreachableException();
                 }else{
-                    hbOut.println(ClientServerCodes.cli2svr_heartbeat);
+                    hbOut.println("beat");
                     hbOut.flush();
                     //System.out.println("Server HB successful");
                 }

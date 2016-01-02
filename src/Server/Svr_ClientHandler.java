@@ -39,7 +39,7 @@ public class Svr_ClientHandler {
         try {
             socket.setSoTimeout(0);
         } catch (SocketException e) {
-            e.printStackTrace();
+            System.out.println("Error setting socket timeout, please try again");
             cleanup();
         }
 
@@ -49,7 +49,8 @@ public class Svr_ClientHandler {
             output = new PrintWriter(new OutputStreamWriter(s.getOutputStream()));
             input = new BufferedReader(new InputStreamReader(s.getInputStream()));
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("Error setting up communication streams, please try again");
+            cleanup();
         }
 
         Thread heartbeatThread = new Thread(() -> {
@@ -63,11 +64,13 @@ public class Svr_ClientHandler {
                 cleanup();
             }
         });
+
         try {
             initHeartbeat();
         } catch (IOException e) {//Failed to open ports
-            e.printStackTrace();
+            System.out.println("Error setting up heartbeat, please try again");
         }
+
         heartbeatThread.start();
 
         clientLoop();
@@ -396,14 +399,14 @@ public class Svr_ClientHandler {
         String response;
         while(!timeout)
         {
-            hbOut.println(ClientServerCodes.svr2cli_heartbeat);
+            hbOut.println("heart");
             hbOut.flush();
 
 
             try
             {
                 response = hbIn.readLine();
-                if(!response.equals(ClientServerCodes.cli2svr_heartbeat))
+                if(!response.equals("beat"))
                 {
                     //Something went wrong, just drop the connection;
                     throw new ClientTimedOutException();
@@ -431,7 +434,7 @@ public class Svr_ClientHandler {
         }
         catch(IOException e)
         {
-            e.printStackTrace(); //Sockets already closed, redundant call, should never happen
+            e.printStackTrace();
         }
     }
 }
