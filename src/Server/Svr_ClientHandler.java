@@ -1,6 +1,6 @@
 package Server;
 
-import Commons.ClientServerCodes;
+
 import Commons.Serializer;
 import Commons.User;
 
@@ -383,7 +383,6 @@ public class Svr_ClientHandler {
         hbSvrSocket = new ServerSocket(0);
         int hbPort = hbSvrSocket.getLocalPort();
         hbSvrSocket.setSoTimeout(10000);
-        //output.print(ClientServerCodes.svr2cli_heartbeatPort);
         output.println(hbPort);
         output.flush();
         hbCliSocket = hbSvrSocket.accept();
